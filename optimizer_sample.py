@@ -1,4 +1,4 @@
-from roboadvisor.optimizer import PortfolioOptimizer
+from roboAdvisor import PortfolioOptimizer
 
 
 if __name__=='__main__':
