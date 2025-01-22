@@ -7,7 +7,7 @@ import scipy.optimize as optimize
 from operator import itemgetter
 
 from config import API_Key
-from fetchData import fetch_data
+from fetchData import fetch_data, fetch_data_yf
 class PortfolioOptimizer:
 
     def __init__(self,
@@ -30,7 +30,7 @@ class PortfolioOptimizer:
         self.risk_tolerance_=risk_tolerance
         self.auth_token_ = API_Key
         self.sim_iterations_=2500
-        self.raw_asset_data, self.sim_comb, self.asset_errors_ = fetch_data(self.asset_basket_, self.auth_token_, self.portfolio_size_, self.max_iters_)
+        self.raw_asset_data, self.sim_comb, self.asset_errors_ = fetch_data_yf(self.asset_basket_, self.auth_token_, self.portfolio_size_, self.max_iters_)
         self.optimize_for_sharpe()
         self.optimize_for_return()
         self.optimize_for_volatility()
