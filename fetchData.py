@@ -61,7 +61,7 @@ def fetch_data_yf(asset_basket, auth_token, portfolio_size, max_iters):
 
     for asset in asset_basket:
         try:
-            temp = yf.download(asset, start="2015-01-01", end="2018-03-27")
+            temp = yf.download(asset, start="2015-01-01", end="2016-01-01")
             if 'Adj Close' in temp.columns:
                 temp = temp[['Adj Close']].rename(columns={'Adj Close': asset + '_adj_close'})
                 if df.empty:
@@ -78,7 +78,7 @@ def fetch_data_yf(asset_basket, auth_token, portfolio_size, max_iters):
         raise ValueError("No data fetched for any assets.")
 
     if isinstance(df.columns, pd.MultiIndex):
-        df.columns = ['_'.join(col).strip() for col in df.columns.values]
+        df.columns = ['_'.join(col) for col in df.columns]
 
     df = df.dropna()
     features = [f for f in list(df) if "_adj_close" in f]
