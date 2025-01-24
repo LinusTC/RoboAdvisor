@@ -6,18 +6,11 @@ import random
 import scipy.optimize as optimize
 from operator import itemgetter
 
-from config import API_Key
-from fetchData import fetch_data, fetch_data_yf
+from fetchData import fetch_raw_data_yf, get_matrices
 class PortfolioOptimizer:
 
-    def __init__(self,
-                 assets,
-                 risk_tolerance=5.0,
-                 portfolio_size=5,
-                 max_iters=None, 
-                 print_init=True, 
-                 max_weight=1.0,
-                 min_weight=0.0):
+    def __init__(self, assets, risk_tolerance=5.0, portfolio_size=5, max_iters=None, print_init=True, max_weight=1.0, min_weight=0.0):
+
         matplotlib.use('PS')
         self.max_weight_=max_weight
         self.min_weight_=min_weight
@@ -28,9 +21,9 @@ class PortfolioOptimizer:
         self.assets_=assets
         self.num_assets_=portfolio_size
         self.risk_tolerance_=risk_tolerance
-        self.auth_token_ = API_Key
         self.sim_iterations_=2500
-        self.raw_asset_data, self.sim_comb, self.asset_errors_ = fetch_data_yf(self.asset_basket_, self.auth_token_, self.portfolio_size_, self.max_iters_)
+        self.raw_asset_data, self.asset_errors_, self.max_combination_ = fetch_raw_data_yf(self.asset_basket_)
+        self.sim_comb = get_matrices(self.raw_asset_data, self.portfolio_size_, self.max_iters_)
         self.optimize_for_sharpe()
         self.optimize_for_return()
         self.optimize_for_volatility()
