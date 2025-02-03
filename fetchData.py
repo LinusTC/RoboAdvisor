@@ -10,33 +10,39 @@ import yfinance as yf
 def fetch_raw_data_yf(asset_basket):
     start = time.time()
     asset_errors = []
+
+    try:
+        data = yf.download(asset_basket, start="2015-01-01", end="2018-01-01", group_by='ticker')
+    except Exception as e:
+        print(f"Error fetching data: {e}")
+        raise
+
+    if data.empty:
+        raise ValueError("No data fetched for any assets.")
     df = pd.DataFrame()
 
     for asset in asset_basket:
-        try:
-            temp = yf.download(asset, start="2015-01-01", end="2018-01-01")
-            if 'Adj Close' in temp.columns and not temp['Adj Close'].empty:
-                temp = temp[['Adj Close']].rename(columns={'Adj Close': f"{asset}_adj_close"})
-                df = pd.merge(df, temp, left_index=True, right_index=True, how='outer') if not df.empty else temp
-            else:
+        if asset in data.columns:
+            try:
+                temp = data[asset]['Adj Close'].dropna()
+                if not temp.empty:
+                    df[f"{asset}_adj_close"] = temp
+                else:
+                    asset_errors.append(asset)
+            except KeyError:
                 asset_errors.append(asset)
-        except Exception as e:
-            print(f"Error fetching data for {asset}: {e}")
+        else:
             asset_errors.append(asset)
 
     if df.empty:
-        raise ValueError("No data fetched for any assets.")
+        raise ValueError("No valid data fetched for any assets.")
 
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = ['_'.join(col) for col in df.columns]
-
-    df = df.dropna()
     max_combination = len(asset_basket) - len(asset_errors)
 
-    print('Omitted assets(',len(asset_errors),'): ', asset_errors)
+    print('Omitted assets (', len(asset_errors), '): ', asset_errors)
     print('Time to fetch data: %.2f seconds' % (time.time() - start))
     
-    return df, [asset_errors], max_combination
+    return df, asset_errors, max_combination
 
 def get_matrices (df, portfolio_size, max_iters):
     features = [f for f in list(df) if "_adj_close" in f]
