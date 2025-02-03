@@ -11,33 +11,30 @@ def fetch_raw_data_yf(asset_basket):
     start = time.time()
     asset_errors = []
 
+    unique_assets = list(set(asset_basket))
+
     try:
-        data = yf.download(asset_basket, start="2015-01-01", end="2018-01-01", group_by='ticker')
+        data = yf.download(unique_assets, start="2015-01-01", end="2018-01-01")
     except Exception as e:
-        print(f"Error fetching data: {e}")
-        raise
+        raise ValueError(f"Error fetching data for assets: {e}")
 
-    if data.empty:
-        raise ValueError("No data fetched for any assets.")
     df = pd.DataFrame()
-
-    for asset in asset_basket:
-        if asset in data.columns:
-            try:
-                temp = data[asset]['Adj Close'].dropna()
-                if not temp.empty:
-                    df[f"{asset}_adj_close"] = temp
-                else:
-                    asset_errors.append(asset)
-            except KeyError:
+    for asset in unique_assets:
+        if asset in data['Adj Close'].columns:
+            temp = data['Adj Close'][[asset]].dropna()
+            if not temp.empty:
+                temp.rename(columns={asset: f"{asset}_adj_close"}, inplace=True)
+                df = pd.merge(df, temp, left_index=True, right_index=True, how='outer') if not df.empty else temp
+            else:
                 asset_errors.append(asset)
         else:
             asset_errors.append(asset)
 
     if df.empty:
-        raise ValueError("No valid data fetched for any assets.")
+        raise ValueError("No data fetched for any assets.")
 
-    max_combination = len(asset_basket) - len(asset_errors)
+    df = df.dropna()
+    max_combination = len(unique_assets) - len(asset_errors)
 
     print('Omitted assets (', len(asset_errors), '): ', asset_errors)
     print('Time to fetch data: %.2f seconds' % (time.time() - start))
