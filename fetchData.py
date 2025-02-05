@@ -20,10 +20,10 @@ def fetch_raw_data_yf(asset_basket):
 
     df = pd.DataFrame()
     for asset in unique_assets:
-        if asset in data['Adj Close'].columns:
-            temp = data['Adj Close'][[asset]].dropna()
+        if asset in data['Close'].columns:
+            temp = data['Close'][[asset]].dropna()
             if not temp.empty:
-                temp.rename(columns={asset: f"{asset}_adj_close"}, inplace=True)
+                temp.rename(columns={asset: f"{asset}_Close"}, inplace=True)
                 df = pd.merge(df, temp, left_index=True, right_index=True, how='outer') if not df.empty else temp
             else:
                 asset_errors.append(asset)
@@ -42,7 +42,7 @@ def fetch_raw_data_yf(asset_basket):
     return df, asset_errors, max_combination
 
 def get_matrices (df, portfolio_size, max_iters):
-    features = [f for f in list(df) if "_adj_close" in f]
+    features = [f for f in list(df) if "_Close" in f]
     asset_combos = list(combinations(features, portfolio_size))
 
     max_iters = min(len(asset_combos), max_iters if max_iters is not None else len(asset_combos))
