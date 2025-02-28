@@ -1,5 +1,5 @@
 import numpy as np
-import scipy.optimize
+from portfolioFunction import create_correlation_matrix, maximize_sharpe
 from tqdm import tqdm
 
 def MLRBA(ticker, covariances, returns, num_iterations=10000):
@@ -17,44 +17,31 @@ def MLRBA(ticker, covariances, returns, num_iterations=10000):
 
     return selected_returns, selected_covariances, rand_assets
 
-def maximize_sharpe(returns, covariances, risk_free_rate=0, min_weight = 0, max_weight = 1):
-    num_assets = len(returns)
-    
-    def neg_sharpe(weights):
-        portfolio_return = np.dot(weights, returns)
-        portfolio_variance = np.dot(weights, covariances @ weights)
-        sharpe_ratio = (portfolio_return - risk_free_rate) / np.sqrt(portfolio_variance)
-        return -sharpe_ratio  
+def find_best_asset_to_remove(rand_assets, selected_covariances, selected_returns, return_weight=0.5, corr_weight=0.5):
+    corr_matrix = create_correlation_matrix(selected_covariances)
 
-    constraints = ({'type': 'eq', 'fun': lambda w: np.sum(w) - 1})
-    bounds= tuple((min_weight, max_weight) for x in range(num_assets))
-    initializer = num_assets * [1. / num_assets,]
+    avg_corrs = corr_matrix.mean(axis=1)  
 
-    optimized = scipy.optimize.minimize(neg_sharpe, initializer, method='SLSQP', bounds=bounds, constraints=constraints)
-
-    return optimized.x
-
-def find_correlation_matrix(rand_assets, selected_covariances):
-    std_devs = np.sqrt(np.diag(selected_covariances))
-    correlation_matrix = selected_covariances / (std_devs[:, None] * std_devs[None, :])
-
-    avg_correlations = correlation_matrix.mean(axis=1)  
-
-    most_correlated_asset = rand_assets[np.argmax(avg_correlations)]
-
-    return most_correlated_asset, avg_correlations, correlation_matrix
-
-def find_best_asset_to_remove(rand_assets, selected_covariances, selected_returns, return_weight=0.5, correlation_weight=0.5):
-    std_devs = np.sqrt(np.diag(selected_covariances))
-    correlation_matrix = selected_covariances / (std_devs[:, None] * std_devs[None, :])
-
-    avg_correlations = correlation_matrix.mean(axis=1)  
-
-    norm_correlation = (avg_correlations - np.min(avg_correlations)) / (np.max(avg_correlations) - np.min(avg_correlations))
+    norm_corr = (avg_corrs - np.min(avg_corrs)) / (np.max(avg_corrs) - np.min(avg_corrs))
     norm_returns = 1 - (selected_returns - np.min(selected_returns)) / (np.max(selected_returns) - np.min(selected_returns))
 
-    combined_score = correlation_weight * norm_correlation + return_weight * norm_returns  
+    combined_score = corr_weight * norm_corr + return_weight * norm_returns  
 
     asset_to_remove = rand_assets[np.argmax(combined_score)]
 
-    return asset_to_remove, avg_correlations, correlation_matrix
+    return asset_to_remove
+
+def find_asset_to_add(portfolio_assets, all_assets, all_covariance, all_returns, return_weight=0.5, corr_weight=0.5):
+    remaining_assets = [asset for asset in all_assets if asset not in portfolio_assets]
+    
+    corr_matrix = create_correlation_matrix(all_covariance)
+    avg_corrs = corr_matrix.loc[remaining_assets, portfolio_assets].mean(axis=1)
+    
+    norm_corr = (avg_corrs - avg_corrs.min()) / (avg_corrs.max() - avg_corrs.min())
+    norm_returns = (all_returns.loc[remaining_assets] - all_returns.min()) / (all_returns.max() - all_returns.min())
+
+    combined_score = corr_weight * norm_corr + return_weight * norm_returns
+    
+    ranked_assets = combined_score.sort_values(ascending=False)
+    
+    return ranked_assets

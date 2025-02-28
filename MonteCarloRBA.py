@@ -1,6 +1,6 @@
 import numpy as np
-import scipy.optimize
 from tqdm import tqdm
+from portfolioFunction import minimize_volatility, maximize_sharpe
 
 def MonteCarloRBA(ticker, covariances, returns, num_iterations=10000, max_on="Sharpe"):
     all_portfolios = []
@@ -40,34 +40,3 @@ def MonteCarloRBA(ticker, covariances, returns, num_iterations=10000, max_on="Sh
             dominant_portfolios.append(portfolio_data)
 
     return all_portfolios, dominant_portfolios
-
-def maximize_sharpe(returns, covariances, risk_free_rate=0, min_weight = 0, max_weight = 1):
-    num_assets = len(returns)
-    
-    def neg_sharpe(weights):
-        portfolio_return = np.dot(weights, returns)
-        portfolio_variance = np.dot(weights, covariances @ weights)
-        sharpe_ratio = (portfolio_return - risk_free_rate) / np.sqrt(portfolio_variance)
-        return -sharpe_ratio  
-
-    constraints = ({'type': 'eq', 'fun': lambda w: np.sum(w) - 1})
-    bounds= tuple((min_weight, max_weight) for x in range(num_assets))
-    initializer = num_assets * [1. / num_assets,]
-
-    optimized = scipy.optimize.minimize(neg_sharpe, initializer, method='SLSQP', bounds=bounds, constraints=constraints)
-
-    return optimized.x
-
-def minimize_volatility(returns, covariances):     
-    num_assets = len(returns)
-
-    def minimize_volatility(weights):      
-        return np.dot(weights, np.dot(covariances, weights))
-
-    constraints = ({'type':'eq', 'fun': lambda x: np.sum(x) -1})
-    bounds = tuple((0,1) for x in range(num_assets))
-    initializer = num_assets * [1. / num_assets,]
-
-    optimized = scipy.optimize.minimize(minimize_volatility, initializer, method='SLSQP', bounds=bounds, constraints=constraints)
-
-    return optimized.x
