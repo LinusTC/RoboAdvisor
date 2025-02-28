@@ -2,7 +2,7 @@ import numpy as np
 import scipy.optimize
 from tqdm import tqdm
 
-def MonteCarloRBA(ticker, covariances, returns, num_iterations=10000):
+def MonteCarloRBA(ticker, covariances, returns, num_iterations=10000, max_on="Sharpe"):
     all_portfolios = []
     dominant_portfolios = []
 
@@ -15,7 +15,11 @@ def MonteCarloRBA(ticker, covariances, returns, num_iterations=10000):
         selected_covariances = covariances.loc[rand_assets, rand_assets].values
 
         # Optimize weights of each portfolio based on Sharpe ratio
-        asset_weights = maximize_sharpe(selected_returns, selected_covariances)
+        if max_on=="vol":
+            asset_weights = minimize_volatility(selected_returns, selected_covariances)
+        
+        else:
+            asset_weights = maximize_sharpe(selected_returns, selected_covariances)
 
         # Calculate portfolio return and variance
         curr_portfolio_returns = np.dot(asset_weights, selected_returns)
@@ -52,7 +56,7 @@ def maximize_sharpe(returns, covariances, risk_free_rate=0, min_weight = 0, max_
 
     optimized = scipy.optimize.minimize(neg_sharpe, initializer, method='SLSQP', bounds=bounds, constraints=constraints)
 
-    return optimized
+    return optimized.x
 
 def minimize_volatility(returns, covariances):     
     num_assets = len(returns)
@@ -66,4 +70,4 @@ def minimize_volatility(returns, covariances):
 
     optimized = scipy.optimize.minimize(minimize_volatility, initializer, method='SLSQP', bounds=bounds, constraints=constraints)
 
-    return optimized
+    return optimized.x
