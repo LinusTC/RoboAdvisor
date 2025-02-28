@@ -1,5 +1,4 @@
-from roboAdvisor import PortfolioOptimizer
-
+from BruteForceRBA import PortfolioOptimizer
 
 if __name__=='__main__':
 
