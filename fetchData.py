@@ -5,6 +5,7 @@ from quandl.errors.quandl_error import NotFoundError
 from itertools import combinations
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 import yfinance as yf
 
 def fetch_raw_data_yf(asset_basket, start_date = "2015-01-01", end_date="2018-01-01"):
@@ -41,20 +42,24 @@ def fetch_raw_data_yf(asset_basket, start_date = "2015-01-01", end_date="2018-01
     
     return df, asset_errors, max_combination
 
-def get_matrices (df, portfolio_size, max_iters):
-    features = [f for f in list(df) if "_Close" in f]
-    asset_combos = list(combinations(features, portfolio_size))
-
-    max_iters = min(len(asset_combos), max_iters if max_iters is not None else len(asset_combos))
-
+def get_matrices(df, portfolio_size, max_iters=None):
+    features = [f for f in df.columns if "_Close" in f]
+    combo_generator = combinations(features, portfolio_size)
+    
     sim_comb = []
-    for assets in asset_combos[:max_iters]:
+    count = 0
+    
+    for assets in tqdm(combo_generator):
+        if max_iters is not None and count >= max_iters:
+            break
+
         filtered_df = df[list(assets)].copy()
         returns = np.log(filtered_df / filtered_df.shift(1))
-        return_matrix = returns.mean() * 252    # Trading days in a year
-        cov_matrix = returns.cov() * 252    # Trading days in a year
-
+        return_matrix = returns.mean() * 252  # Annualize by number of trading days
+        cov_matrix = returns.cov() * 252      # Annualize covariance matrix
+        
         sim_comb.append([assets, cov_matrix, return_matrix])
+        count += 1
 
     return sim_comb
 

@@ -1,17 +1,17 @@
 import numpy as np
 import scipy.optimize
 
-def maximize_sharpe(returns, covariances, risk_free_rate=0, min_weight = 0, max_weight = 1):
+def maximize_sharpe(returns, covariances, risk_free_rate=0, min_weight = 0, max_weight = 1, return_power = 1, std_power = 1):
     num_assets = len(returns)
     
     def neg_sharpe(weights):
         portfolio_return = np.dot(weights, returns)
         portfolio_variance = np.dot(weights, covariances @ weights)
-        sharpe_ratio = (portfolio_return - risk_free_rate) / np.sqrt(portfolio_variance)
+        sharpe_ratio = get_sharpe_ratio(portfolio_return, portfolio_variance, risk_free_rate, return_power, std_power)
         return -sharpe_ratio  
 
     constraints = ({'type': 'eq', 'fun': lambda w: np.sum(w) - 1})
-    bounds= tuple((min_weight, max_weight) for x in range(num_assets))
+    bounds= tuple((min_weight, max_weight) for _ in range(num_assets))
     initializer = num_assets * [1. / num_assets,]
 
     optimized = scipy.optimize.minimize(neg_sharpe, initializer, method='SLSQP', bounds=bounds, constraints=constraints)
@@ -47,3 +47,10 @@ def find_correlated_asset(rand_assets, selected_covariances):
     most_correlated_asset = rand_assets[np.argmax(avg_correlations)]
 
     return most_correlated_asset, avg_correlations
+
+def get_sharpe_ratio(returns, variances, risk_free_rate = 0, return_power = 1, std_power = 1):
+
+    std_devs = np.sqrt(variances)
+    sharpe_ratios = ((returns - risk_free_rate) ** return_power) / (std_devs ** std_power)
+
+    return sharpe_ratios
