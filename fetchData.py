@@ -58,13 +58,13 @@ def get_matrices (df, portfolio_size, max_iters):
 
     return sim_comb
 
-def getNasdaqStocks():
+def getNasdaqStocks(num_assets=100):
     # Fetch the list of all NASDAQ tickers
     url = 'http://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt'
     nasdaq_listed = pd.read_csv(url, sep='|')
     nasdaq_tickers = nasdaq_listed['Symbol'].dropna().tolist()
 
-    return nasdaq_tickers
+    return np.random.choice(nasdaq_tickers, num_assets, replace=False)
 
 def fetch_data(asset_basket, auth_token, portfolio_size, max_iters):
     start = time.time()
