@@ -7,14 +7,14 @@ import pandas as pd
 import numpy as np
 import yfinance as yf
 
-def fetch_raw_data_yf(asset_basket):
+def fetch_raw_data_yf(asset_basket, start_date = "2015-01-01", end_date="2018-01-01"):
     start = time.time()
     asset_errors = []
 
     unique_assets = list(set(asset_basket))
 
     try:
-        data = yf.download(unique_assets, start="2015-01-01", end="2018-01-01")
+        data = yf.download(unique_assets, start=start_date, end=end_date)
     except Exception as e:
         raise ValueError(f"Error fetching data for assets: {e}")
 
