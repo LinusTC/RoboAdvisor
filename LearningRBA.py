@@ -1,5 +1,6 @@
 import numpy as np
 from portfolioFunction import create_correlation_matrix, maximize_sharpe
+import pandas as pd
 from tqdm import tqdm
 
 def MLRBA(ticker, covariances, returns, num_iterations=10000):
