@@ -39,7 +39,7 @@ def find_best_asset_to_remove(rand_assets, selected_covariances, selected_return
     return asset_to_remove
 
 def find_asset_to_add(portfolio_assets, all_assets, all_covariance, all_returns, 
-                      return_weight=0.4, corr_weight=0.2, vol_weight= 0.4):
+                      return_weight=1/3, corr_weight=1/3, vol_weight= 1/3):
     
     remaining_assets = [asset for asset in all_assets if asset not in portfolio_assets]
     all_covariance_df = pd.DataFrame(all_covariance, index=all_assets, columns=all_assets)
