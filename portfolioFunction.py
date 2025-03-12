@@ -4,7 +4,7 @@ from itertools import combinations
 from tqdm import tqdm
 
 def get_matrices(df, portfolio_size, max_iters=None):
-    features = [f for f in df.columns if "_Close" in f]
+    features = [f for f in df.columns]
     combo_generator = combinations(features, portfolio_size)
     
     sim_comb = []

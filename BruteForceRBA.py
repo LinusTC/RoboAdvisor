@@ -27,40 +27,6 @@ class PortfolioOptimizer:
         self.optimize_for_sharpe()
         self.optimize_for_return()
         self.optimize_for_volatility()
-           
-    
-    def portfolio_simulation(self):
-        start=time.time()
-        iterations=self.sim_iterations_
-        self.simulation_results=[]
-        
-        sim_comb=self.sim_comb.copy()
-        
-        for _ in range(len(self.sim_comb)):
-            curr_sim=sim_comb.pop()
-            returns=np.array(curr_sim[2])
-            cov_matrix=np.array(curr_sim[1])
-            assets=curr_sim[0]
-                       
-            port_sharpes=[]
-            port_returns=[]
-            port_vols=[]
-                        
-            for _ in range (iterations):
-                weights=np.random.dirichlet(np.ones(self.num_assets_), size=1)
-                weights=weights[0]
-                ret=np.sum(returns * weights)
-                vol=np.sqrt(np.dot(weights.T, np.dot(cov_matrix, weights)))
-                port_returns.append(ret)
-                port_vols.append(vol)
-                port_sharpes.append(ret / vol)
-            
-            port_returns=np.array(port_returns)
-            port_vols=np.array(port_vols)
-            port_sharpes=np.array(port_sharpes)            
-            self.simulation_results.append([assets, port_returns,port_vols, port_sharpes])
-     
-        print('Time to simulate portfolios: %.2f seconds' % (time.time() - start))
         
     def portfolio_stats(self,weights):   
         returns=self.return_matrix_
