@@ -1,5 +1,30 @@
 import numpy as np
 import scipy.optimize
+from itertools import combinations
+from tqdm import tqdm
+
+def get_matrices(df, portfolio_size, max_iters=None):
+    features = [f for f in df.columns if "_Close" in f]
+    combo_generator = combinations(features, portfolio_size)
+    
+    sim_comb = []
+    count = 0
+    
+    for assets in tqdm(combo_generator):
+        if max_iters is not None and count >= max_iters:
+            break
+
+        filtered_df = df[list(assets)].copy()
+        returns = np.log(filtered_df / filtered_df.shift(1))
+        return_matrix = returns.mean() * 252  # Annualize by number of trading days
+        cov_matrix = returns.cov() * 252      # Annualize covariance matrix
+
+        correlation_matrix = create_correlation_matrix(cov_matrix)
+
+        sim_comb.append([assets, cov_matrix, return_matrix, correlation_matrix])
+        count += 1
+
+    return sim_comb
 
 def maximize_sharpe(returns, covariances, risk_free_rate=0, min_weight = 0, max_weight = 1, return_power = 1, std_power = 1):
     num_assets = len(returns)
@@ -37,16 +62,6 @@ def create_correlation_matrix(cov_matrix):
     correlation_matrix = cov_matrix / (std_devs[:, None] * std_devs[None, :])
 
     return correlation_matrix
-
-def find_correlated_asset(rand_assets, selected_covariances):
-
-    correlation_matrix = create_correlation_matrix(selected_covariances)
-
-    avg_correlations = correlation_matrix.mean(axis=1)  
-
-    most_correlated_asset = rand_assets[np.argmax(avg_correlations)]
-
-    return most_correlated_asset, avg_correlations
 
 def get_sharpe_ratio(returns, variances, risk_free_rate = 0, return_power = 1, std_power = 1):
 

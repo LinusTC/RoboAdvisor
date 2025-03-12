@@ -1,9 +1,7 @@
 
 import time
-from itertools import combinations
 import pandas as pd
 import numpy as np
-from tqdm import tqdm
 import yfinance as yf
 
 def fetch_raw_data_yf(asset_basket, start_date = "2015-01-01", end_date="2018-01-01"):
@@ -39,27 +37,6 @@ def fetch_raw_data_yf(asset_basket, start_date = "2015-01-01", end_date="2018-01
     print('Time to fetch data: %.2f seconds' % (time.time() - start))
     
     return df, asset_errors, max_combination
-
-def get_matrices(df, portfolio_size, max_iters=None):
-    features = [f for f in df.columns if "_Close" in f]
-    combo_generator = combinations(features, portfolio_size)
-    
-    sim_comb = []
-    count = 0
-    
-    for assets in tqdm(combo_generator):
-        if max_iters is not None and count >= max_iters:
-            break
-
-        filtered_df = df[list(assets)].copy()
-        returns = np.log(filtered_df / filtered_df.shift(1))
-        return_matrix = returns.mean() * 252  # Annualize by number of trading days
-        cov_matrix = returns.cov() * 252      # Annualize covariance matrix
-        
-        sim_comb.append([assets, cov_matrix, return_matrix])
-        count += 1
-
-    return sim_comb
 
 def getNasdaqStocks(num_assets=100):
     # Fetch the list of all NASDAQ tickers
