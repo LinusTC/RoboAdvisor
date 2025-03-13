@@ -1,6 +1,6 @@
 import numpy as np
 from tqdm import tqdm
-from portfolioFunction import minimize_volatility, maximize_sharpe
+from PortfolioFunction import minimize_volatility, maximize_sharpe
 
 def MonteCarloRBA(ticker, covariances, returns, num_iterations=10000, max_on="sharpe", min_assets = 3, max_assets = 5, min_weight=0, max_weight=1):
     all_portfolios = []
