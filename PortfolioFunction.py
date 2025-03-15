@@ -3,7 +3,7 @@ import scipy.optimize
 from itertools import combinations
 from tqdm import tqdm
 
-def get_matrices(df, portfolio_size, max_iters=None):
+def get_matrices_bf(df, portfolio_size, max_iters=None):
     features = [f for f in df.columns]
     combo_generator = combinations(features, portfolio_size)
     
@@ -25,6 +25,20 @@ def get_matrices(df, portfolio_size, max_iters=None):
         count += 1
 
     return sim_comb
+
+def get_matrices(df):
+    df = df.dropna()
+
+    returns = np.log(df / df.shift(1)).dropna()
+
+    return_matrix = returns.mean() * 252
+
+    cov_matrix = returns.cov() * 252
+    
+    correlation_matrix = create_correlation_matrix(cov_matrix)
+    
+    return df.columns.tolist(), return_matrix, cov_matrix, correlation_matrix
+
 
 def maximize_sharpe(returns, covariances, risk_free_rate=0, min_weight = 0, max_weight = 1, return_power = 1, std_power = 1):
     num_assets = len(returns)

@@ -6,7 +6,8 @@ import random
 import scipy.optimize as optimize
 from operator import itemgetter
 
-from fetchData import fetch_raw_data_yf, get_matrices
+from fetchData import fetch_raw_data_yf
+from PortfolioFunction import get_matrices_bf
 class PortfolioOptimizer:
 
     def __init__(self, assets, risk_tolerance=5.0, portfolio_size=5, max_iters=None, print_init=True, max_weight=1.0, min_weight=0.0):
@@ -23,7 +24,7 @@ class PortfolioOptimizer:
         self.risk_tolerance_=risk_tolerance
         self.sim_iterations_=2500
         self.raw_asset_data, self.asset_errors_, self.max_combination_ = fetch_raw_data_yf(self.asset_basket_)
-        self.sim_comb = get_matrices(self.raw_asset_data, self.portfolio_size_, self.max_iters_)
+        self.sim_comb = get_matrices_bf(self.raw_asset_data, self.portfolio_size_, self.max_iters_)
         self.optimize_for_sharpe()
         self.optimize_for_return()
         self.optimize_for_volatility()

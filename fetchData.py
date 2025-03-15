@@ -76,3 +76,9 @@ def getSNP500():
     stockdata = df['Symbol'].to_list()
     return stockdata
 
+def getNasdaq_comp (start, end):
+    nasdaq_comp, asset_errors, max_combination = fetch_raw_data_yf(["^IXIC"], start, end)
+    nasdaq_start = nasdaq_comp['^IXIC'].iloc[0]
+    nasdaq_comp['Normalized'] = (nasdaq_comp['^IXIC'] / nasdaq_start) * 100
+
+    return nasdaq_comp
