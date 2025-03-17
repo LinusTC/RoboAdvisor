@@ -26,15 +26,16 @@ def get_matrices_bf(df, portfolio_size, max_iters=None):
 
     return sim_comb
 
-def get_matrices(df):
+def get_matrices(df, halflife=30):
     df = df.dropna()
 
     returns = np.log(df / df.shift(1)).dropna()
+    ewm_returns = returns.ewm(halflife=halflife).mean()
 
-    return_matrix = returns.mean() * 252
+    return_matrix = ewm_returns.mean() * 252
 
     cov_matrix = returns.cov() * 252
-    
+
     correlation_matrix = create_correlation_matrix(cov_matrix)
     
     return df.columns.tolist(), return_matrix, cov_matrix, correlation_matrix
