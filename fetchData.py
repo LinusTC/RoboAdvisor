@@ -15,7 +15,6 @@ def fetch_raw_data_yf(asset_basket, start_date="2015-01-01", end_date="2018-01-0
         data = yf.download(asset, start=start_date, end=end_date, auto_adjust=True)
         if not data.empty:
             close_prices = data['Close']
-            close_prices.rename(columns={'Close': f"{asset}_Close"})
             asset_data_frames.append(close_prices)
         else:
             asset_errors.append(asset)
@@ -44,7 +43,7 @@ def fetch_raw_data_yf_all(asset_basket, start_date = "2015-01-01", end_date="201
         if asset in data['Close'].columns:
             temp = data['Close'][[asset]].dropna()
             if not temp.empty:
-                temp.rename(columns={asset: f"{asset}_Close"}, inplace=True)
+                temp.rename(columns={asset: asset}, inplace=True)
                 df = pd.merge(df, temp, left_index=True, right_index=True, how='outer') if not df.empty else temp
             else:
                 asset_errors.append(asset)
