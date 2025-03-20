@@ -58,6 +58,32 @@ def maximize_sharpe(returns, covariances, risk_free_rate=0, min_weight = 0, max_
 
     return optimized.x
 
+def maximize_sharpe_SLSQP(returns, covariances, risk_free_rate=0, min_weight=0, max_weight=1, return_power=1, std_power=1):
+    num_assets = len(returns)
+    weights_history = []  # to store weights at each iteration
+    sharpe_history = []  # to store Sharpe ratio at each iteration
+
+    def neg_sharpe(weights):
+        portfolio_return = np.dot(weights, returns)
+        portfolio_variance = np.dot(weights, covariances @ weights)
+        sharpe_ratio = get_sharpe_ratio(portfolio_return, portfolio_variance, risk_free_rate, return_power, std_power)
+        return -sharpe_ratio
+    
+    def save_weights(weights):
+        portfolio_return = np.dot(weights, returns)
+        portfolio_variance = np.dot(weights, covariances @ weights)
+        sharpe_ratio = get_sharpe_ratio(portfolio_return, portfolio_variance, risk_free_rate, return_power, std_power)
+        weights_history.append(weights.copy())
+        sharpe_history.append(sharpe_ratio)  # Save the positive Sharpe ratio
+
+    constraints = {'type': 'eq', 'fun': lambda w: np.sum(w) - 1}
+    bounds = tuple((min_weight, max_weight) for _ in range(num_assets))
+    initializer = num_assets * [1. / num_assets,]
+
+    optimized = scipy.optimize.minimize(neg_sharpe, initializer, method='SLSQP', bounds=bounds, constraints=constraints, callback=save_weights)
+
+    return optimized.x, weights_history, sharpe_history  # Return optimized weights, history of weights, and Sharpe ratios
+
 def minimize_volatility(returns, covariances):     
     num_assets = len(returns)
 
