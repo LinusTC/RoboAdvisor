@@ -7,7 +7,7 @@ def MonteCarloRBA(ticker, covariances, returns, num_iterations=10000, max_on="sh
     dominant_portfolios = []
     frequency = {key: 1 for key in ticker}
 
-    for _ in tqdm(range(num_iterations)):
+    for i in tqdm(range(num_iterations)):
         num_assets = np.random.randint(min_assets, max_assets) if min_assets != max_assets else min_assets
 
         total_frequency = sum(1.0 / frequency[t] for t in ticker)
@@ -38,6 +38,7 @@ def MonteCarloRBA(ticker, covariances, returns, num_iterations=10000, max_on="sh
             "tickers": rand_assets,
             "weights": asset_weights,
             "sharpe": (curr_portfolio_returns-0)/np.sqrt(curr_portfolio_var),
+            "iteration": i
         }
         all_portfolios.append(portfolio_data)
 
