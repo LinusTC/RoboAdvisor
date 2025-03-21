@@ -5,21 +5,18 @@ from PortfolioFunction import minimize_volatility, maximize_sharpe
 def MonteCarloRBA(ticker, covariances, returns, num_iterations=10000, max_on="sharpe", min_assets = 3, max_assets = 5, min_weight=0, max_weight=1):
     all_portfolios = []
     dominant_portfolios = []
-    frequency = {key: 1 for key in ticker}  # Initialize frequency of each ticker with 1 to avoid division by zero
+    frequency = {key: 1 for key in ticker}
 
     for _ in tqdm(range(num_iterations)):
         num_assets = np.random.randint(min_assets, max_assets) if min_assets != max_assets else min_assets
 
-        # Adjust selection probability based on inverse frequency
         total_frequency = sum(1.0 / frequency[t] for t in ticker)
         probabilities = [(1.0 / frequency[t]) / total_frequency for t in ticker]
         rand_assets = np.random.choice(list(ticker), num_assets, replace=False, p=probabilities)
 
-        # Update frequency of selected assets
         for asset in rand_assets:
             frequency[asset] += 1
 
-        # Extract data for current portfolio
         selected_returns = returns.loc[rand_assets].values
         selected_covariances = covariances.loc[rand_assets, rand_assets].values
 
@@ -32,7 +29,6 @@ def MonteCarloRBA(ticker, covariances, returns, num_iterations=10000, max_on="sh
         else:
             asset_weights = maximize_sharpe(selected_returns, selected_covariances, 0, min_weight, max_weight)
 
-        # Calculate portfolio return and variance
         curr_portfolio_returns = np.dot(asset_weights, selected_returns)
         curr_portfolio_var = np.dot(asset_weights, selected_covariances @ asset_weights)
 
