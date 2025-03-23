@@ -107,65 +107,6 @@ class PortfolioOptimizer:
         print('Portfolio Sharpe Ratio: ', temp[4])
         print('')
         print('')
-
-    def optimize_for_return(self):
-        num_assets = self.portfolio_size_       
-        constraints=({'type':'eq', 'fun': lambda x: np.sum(x) -1})
-        bounds = tuple((0, 1) for x in range(num_assets))
-        initializer = num_assets * [1. / num_assets,]
-        sim_comb = self.sim_comb.copy()
-         
-        def _maximize_return(weights): 
-            self.portfolio_stats(weights)
-            port_return = self._port_return_
-            return -port_return
-        
-        self.return_scores_ = []
-        for _ in range(len(sim_comb)):
-            curr_sim = sim_comb.pop()
-            self.return_matrix_ = np.array(curr_sim[2])
-            self.cov_matrix_ = np.array(curr_sim[1])
-            self.assets_ = curr_sim[0]
-            
-            optimal_return = optimize.minimize(
-                _maximize_return,
-                initializer,
-                method = 'SLSQP',
-                bounds = bounds,
-                constraints = constraints,
-            )
-            
-            optimal_return_weights_ = optimal_return['x'].round(4)
-            optimal_return_stats_ = self.portfolio_stats(optimal_return_weights_)
-            
-            x = self.assets_
-            asset_list = []
-            for i in range(len(x)):
-                temp = x[i].split('_')
-                asset_list.append(temp[0])
-                
-            optimal_return_portfolio_ = list(zip(asset_list, list(optimal_return_weights_)))
-            self.return_scores_.append([optimal_return_weights_,
-                                        optimal_return_portfolio_,
-                                        round(optimal_return_stats_[0] * 100, 4),
-                                        round(optimal_return_stats_[1] * 100, 4),
-                                        round(optimal_return_stats_[2], 4)])
-        
-        self.return_scores_ = sorted(self.return_scores_, key = itemgetter(2), reverse=True)
-        self.best_return_portfolio_ = self.return_scores_[0]
-        temp = self.best_return_portfolio_
-        
-        if (self.print_init_ == True):
-        
-            print('----- Portfolio: Pure Return ----')
-            print('')
-            print(*temp[1], sep='\n')
-            print('')
-            print('Portfolio Return: ', temp[2],'%')
-            print('Portfolio Volatility: ', temp[3],'%')
-            print('Portfolio Sharpe Ratio: ', temp[4])
-            print('')
-            print('')
     
     def optimize_for_volatility(self): 
         num_assets = self.portfolio_size_       
