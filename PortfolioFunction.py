@@ -26,7 +26,7 @@ def get_matrices_bf(df, portfolio_size, max_iters=None):
 
     return sim_comb
 
-def get_matrices(df, halflife=30):
+def get_matrices(df, halflife=20):
     df = df.dropna()
 
     returns = np.log(df / df.shift(1)).dropna()
