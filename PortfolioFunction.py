@@ -32,13 +32,14 @@ def get_matrices(df, halflife=20):
     normal_returns = np.log(df / df.shift(1)).dropna()
     ewm_returns = normal_returns.ewm(halflife=halflife).mean()
 
+    daily_returns = ewm_returns.mean()
     annaulized_returns = ewm_returns.mean() * 252
 
     cov_matrix = normal_returns.cov() * 252
 
     correlation_matrix = create_correlation_matrix(cov_matrix)
     
-    return df.columns.tolist(), annaulized_returns, ewm_returns, normal_returns, cov_matrix, correlation_matrix
+    return df.columns.tolist(), annaulized_returns, daily_returns, ewm_returns, normal_returns, cov_matrix, correlation_matrix
 
 
 def maximize_sharpe(returns, covariances, risk_free_rate=0, min_weight = 0, max_weight = 1, return_power = 1, std_power = 1):
