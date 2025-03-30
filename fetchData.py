@@ -5,7 +5,7 @@ import numpy as np
 import yfinance as yf
 from datetime import datetime, timedelta
 
-def fetch_raw_data_yf(asset_basket, start_date="2015-01-01", end_date="2018-01-01"):
+def fetch_raw_data_yf(asset_basket, start_date=pd.Timestamp("2015-01-01"), end_date=pd.Timestamp("2018-01-01")):
     start = time.time()
     asset_errors = []
     asset_data_frames = []
@@ -82,9 +82,3 @@ def getNasdaq_comp (start, end):
     nasdaq_comp['Normalized'] = (nasdaq_comp['^IXIC'] / nasdaq_start) * 100
 
     return nasdaq_comp
-
-def add_days_to_date(date_str, days_to_add, date_format="%Y-%m-%d"):
-    date_obj = datetime.strptime(date_str, date_format)
-    new_date = date_obj + timedelta(days=days_to_add)
-    
-    return new_date.strftime(date_format)
