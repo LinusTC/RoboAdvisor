@@ -1,22 +1,202 @@
+import math
 import numpy as np
-from PortfolioFunction import create_correlation_matrix, maximize_sharpe
+from PortfolioFunction import create_correlation_matrix, get_sharpe_ratio, maximize_sharpe
 import pandas as pd
 from tqdm import tqdm
 
-def MLRBA(ticker, covariances, returns, num_iterations=10000):
+def MLRBA_V1(ticker, covariances, returns, num_iterations=None, risk_free_rate = 0, 
+             return_power = 1, std_power = 1, return_weight=1/3, corr_weight=1/3, vol_weight= 1/3, num_assets = 8, base_portfolio = None):
+    
+    if num_iterations is None:
+        num_iterations = min(math.comb(len(ticker), num_assets), 100000)
+    
+    if base_portfolio is None:
+        base_portfolio = np.random.choice(list(ticker), num_assets, replace=False)
+        #base_portfolio = list(ticker)[:num_assets]
+    
+    def _get_portfolio_stats (portfolio_assets, risk_free_rate = 0):
+        p_asset_ret = returns.loc[portfolio_assets].values
+        p_asset_var = covariances.loc[portfolio_assets, portfolio_assets].values
+        best_p_weights = maximize_sharpe(p_asset_ret, p_asset_var)
+        p_ret = np.dot(best_p_weights,p_asset_ret)
+        p_var = np.dot(best_p_weights, p_asset_var @ best_p_weights)
+        sharpe = get_sharpe_ratio(p_ret, p_var, risk_free_rate, return_power, std_power)
 
-    num_assets = np.random.randint(3, 6)
-    rand_assets = np.random.choice(list(ticker), num_assets, replace=False)
+        return p_asset_ret, p_asset_var, sharpe, p_ret, p_var, best_p_weights
 
-    selected_returns = returns.loc[rand_assets].values
-    selected_covariances = covariances.loc[rand_assets, rand_assets].values
+    def _update_portfolios_array(portfolios, assets, weights, p_ret, p_var):
+        portfolios.append({
+            "tickers": assets,
+            "weights": weights,
+            "return": p_ret,
+            "variance": p_var,
+            "sharpe": (p_ret-risk_free_rate)/np.sqrt(p_var),
+        })
 
-    asset_weights = maximize_sharpe(selected_returns, selected_covariances)
+    all_portfolios = []
+    
+    curr_ret, curr_var, curr_weighted_sharpe, curr_p_return, curr_p_variance, curr_p_weights = _get_portfolio_stats(base_portfolio, risk_free_rate)
+    _update_portfolios_array(all_portfolios, base_portfolio, curr_p_weights, curr_p_return, curr_p_variance)
 
-    curr_portfolio_returns = np.dot(asset_weights, selected_returns)
-    curr_portfolio_var = np.dot(asset_weights, selected_covariances @ asset_weights)        
+    good_portfolios = all_portfolios.copy()
+    best_portfolio = base_portfolio.copy()
 
-    return selected_returns, selected_covariances, rand_assets
+    highest_weighted_sharpe = -np.inf
+    highest_weighted_sharpe = curr_weighted_sharpe
+    
+    portfolios_tested = 0
+    best_iteration = 0
+
+    progress_bar = tqdm(total=num_iterations, desc="Portfolios Tested")
+    for _ in range(num_iterations):
+        asset_to_remove = find_best_asset_to_remove(best_portfolio, curr_var, curr_ret)
+        new_portfolio = [str(asset) for asset in best_portfolio if asset != asset_to_remove]
+
+        ranked_assets = find_asset_to_add(new_portfolio, ticker, covariances, returns,
+                                          return_weight, corr_weight, vol_weight)
+
+        asset_added = False
+
+        for asset in ranked_assets.index:
+            if asset in new_portfolio:
+                continue
+
+            test_portfolio = new_portfolio + [asset]
+            portfolios_tested += 1
+            progress_bar.update(1)
+
+            new_returns, new_var, new_weighted_sharpe, new_p_return, new_p_variance, new_p_weights = _get_portfolio_stats(test_portfolio, risk_free_rate)
+            _update_portfolios_array(all_portfolios, test_portfolio, new_p_weights, new_p_return, new_p_variance)
+
+            if new_weighted_sharpe > highest_weighted_sharpe:
+                best_iteration = portfolios_tested
+                best_portfolio = test_portfolio
+                curr_ret, curr_var = new_returns, new_var
+                highest_weighted_sharpe = new_weighted_sharpe
+
+                _update_portfolios_array(good_portfolios, test_portfolio, new_p_weights, new_p_return, new_p_variance)
+
+                asset_added = True
+                break  # Accept first asset that improves Sharpe
+
+        if not asset_added:
+            print("All assets have been tested or no improvement found.")
+            break
+
+    progress_bar.close()
+
+    base_details = good_portfolios[0]
+    best_details = good_portfolios[-1]
+
+    return base_details, best_details, good_portfolios, all_portfolios, best_iteration
+
+def MLRBA_V2(ticker, covariances, returns, correlation_matrix, num_iterations=None, risk_free_rate = 0, 
+             return_power = 1, std_power = 1, return_weight=1/3, corr_weight=1/3, vol_weight= 1/3, num_assets = 8, base_portfolio = None):
+    
+    if num_iterations is None:
+        num_iterations = min(math.comb(len(ticker), num_assets), 100000)
+
+    if base_portfolio is None:
+        base_portfolio = np.random.choice(list(ticker), num_assets, replace=False)
+        #base_portfolio = list(ticker)[:num_assets]
+
+    def _get_portfolio_stats(portfolio_assets, risk_free_rate=0):
+        p_asset_ret = returns.loc[portfolio_assets].values
+        p_asset_var = covariances.loc[portfolio_assets, portfolio_assets].values
+        best_p_weights = maximize_sharpe(p_asset_ret, p_asset_var)
+        p_ret = np.dot(best_p_weights, p_asset_ret)
+        p_var = np.dot(best_p_weights, p_asset_var @ best_p_weights)
+        sharpe = get_sharpe_ratio(p_ret, p_var, risk_free_rate, return_power, std_power)
+        return p_asset_ret, p_asset_var, sharpe, p_ret, p_var, best_p_weights
+
+    def _update_portfolios_array(portfolios, assets, weights, p_ret, p_var):
+        portfolios.append({
+            "tickers": assets,
+            "weights": weights,
+            "return": p_ret,
+            "variance": p_var,
+            "sharpe": (p_ret - risk_free_rate) / np.sqrt(p_var),
+        })
+
+    all_portfolios = []
+
+    curr_ret, curr_var, curr_weighted_sharpe, curr_p_return, curr_p_variance, curr_p_weights = _get_portfolio_stats(base_portfolio, risk_free_rate)
+    _update_portfolios_array(all_portfolios, base_portfolio, curr_p_weights, curr_p_return, curr_p_variance)
+
+    good_portfolios = all_portfolios.copy()
+    best_portfolio = base_portfolio.copy()
+
+    highest_weighted_sharpe = -np.inf
+    highest_weighted_sharpe = curr_weighted_sharpe
+
+    best_iteration = 0
+    portfolios_tested = 0
+
+    learning_rate = 0.03
+    improvement_threshold = 0.001
+
+    progress_bar = tqdm(total=num_iterations, desc="Portfolios Tested")
+    for i in range(num_iterations):
+        asset_to_remove = find_best_asset_to_remove(best_portfolio, curr_var, curr_ret)
+        new_portfolio = [str(asset) for asset in best_portfolio if asset != asset_to_remove]
+
+        ranked_assets = find_asset_to_add(new_portfolio, ticker, covariances, returns, return_weight, corr_weight, vol_weight)
+
+        asset_added = False
+
+        for asset in ranked_assets.index:
+            portfolios_tested += 1
+            progress_bar.update(1)
+            
+            copy_new_portfolio = new_portfolio.copy()
+            copy_new_portfolio.append(asset)
+
+            new_returns, new_var, new_weighted_sharpe, new_p_return, new_p_variance, new_p_weights = _get_portfolio_stats(copy_new_portfolio, risk_free_rate)
+            _update_portfolios_array(all_portfolios, copy_new_portfolio, new_p_weights, new_p_return, new_p_variance)
+
+            if new_weighted_sharpe > highest_weighted_sharpe:
+                best_iteration = portfolios_tested
+                improvement = new_weighted_sharpe - highest_weighted_sharpe
+                highest_weighted_sharpe = new_weighted_sharpe
+                best_portfolio = copy_new_portfolio
+                curr_ret, curr_var = new_returns, new_var
+
+                asset_added = True
+
+                asset_return = returns.loc[asset]
+                asset_vol = np.sqrt(covariances.loc[asset, asset])
+                avg_return = returns.mean()
+                avg_vol = np.sqrt(np.diag(covariances)).mean()
+
+                corr_with_portfolio = correlation_matrix.loc[copy_new_portfolio, asset].drop(asset).mean()
+                avg_corr_in_portfolio = correlation_matrix.loc[copy_new_portfolio].drop(asset, axis=1).mean().mean()
+
+                # Update weights using the current learning rate
+                return_weight += learning_rate * (asset_return - avg_return) / avg_return
+                vol_weight    += learning_rate * (avg_vol - asset_vol) / avg_vol
+                corr_weight   += learning_rate * (avg_corr_in_portfolio - corr_with_portfolio) / avg_corr_in_portfolio
+
+                total = return_weight + corr_weight + vol_weight
+                return_weight /= total
+                corr_weight /= total
+                vol_weight /= total
+
+                if improvement < improvement_threshold:
+                    learning_rate *= 0.95
+                else:
+                    learning_rate *= 1.01
+
+                _update_portfolios_array(good_portfolios, copy_new_portfolio, new_p_weights, new_p_return, new_p_variance)
+                break  # stop at first valid improving asset
+
+        if not asset_added:
+            print("All assets have been tested or no improvement possible.")
+            break
+
+    base_details = good_portfolios[0]
+    best_details = good_portfolios[-1]
+
+    return base_details, best_details, good_portfolios, all_portfolios, best_iteration
 
 def find_best_asset_to_remove(rand_assets, selected_covariances, selected_returns, return_weight=1/3, corr_weight=1/3, vol_weight= 1/3):
 
