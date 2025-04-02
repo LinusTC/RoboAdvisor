@@ -95,7 +95,7 @@ def MLRBA_V2(ticker, covariances, returns, correlation_matrix, num_iterations=No
              return_power = 1, std_power = 1, return_weight=1/3, corr_weight=1/3, vol_weight= 1/3, num_assets = 8, base_portfolio = None):
     
     if num_iterations is None:
-        num_iterations = min(math.comb(len(ticker), num_assets), 100000)
+        num_iterations = min(math.comb(len(ticker), num_assets), 50000)
 
     if base_portfolio is None:
         base_portfolio = np.random.choice(list(ticker), num_assets, replace=False)
@@ -177,6 +177,13 @@ def MLRBA_V2(ticker, covariances, returns, correlation_matrix, num_iterations=No
                 return_weight += learning_rate * (asset_return - avg_return) / avg_return
                 vol_weight    += learning_rate * (avg_vol - asset_vol) / avg_vol
                 corr_weight   += learning_rate * (avg_corr_in_portfolio - corr_with_portfolio) / avg_corr_in_portfolio
+
+                min_weight = 0.2 + 0.8 * (portfolios_tested / num_iterations)
+                max_weight = 1.8 - 0.8 * (portfolios_tested / num_iterations)
+
+                return_weight = np.clip(return_weight, min_weight, max_weight)
+                corr_weight = np.clip(corr_weight, min_weight, max_weight)
+                vol_weight = np.clip(vol_weight, min_weight, max_weight)
 
                 total = return_weight + corr_weight + vol_weight
                 return_weight /= total
