@@ -24,19 +24,20 @@ def MLRBA_V1(ticker, covariances, returns, num_iterations=None, risk_free_rate =
 
         return p_asset_ret, p_asset_var, sharpe, p_ret, p_var, best_p_weights
 
-    def _update_portfolios_array(portfolios, assets, weights, p_ret, p_var):
+    def _update_portfolios_array(portfolios, assets, weights, p_ret, p_var, iteration=None):
         portfolios.append({
             "tickers": assets,
             "weights": weights,
             "return": p_ret,
             "variance": p_var,
-            "sharpe": (p_ret-risk_free_rate)/np.sqrt(p_var),
+            "sharpe": (p_ret - risk_free_rate) / np.sqrt(p_var),
+            "iteration": iteration
         })
 
     all_portfolios = []
     
     curr_ret, curr_var, curr_weighted_sharpe, curr_p_return, curr_p_variance, curr_p_weights = _get_portfolio_stats(base_portfolio, risk_free_rate)
-    _update_portfolios_array(all_portfolios, base_portfolio, curr_p_weights, curr_p_return, curr_p_variance)
+    _update_portfolios_array(all_portfolios, base_portfolio, curr_p_weights, curr_p_return, curr_p_variance, iteration=0)
 
     good_portfolios = all_portfolios.copy()
     best_portfolio = base_portfolio.copy()
@@ -66,7 +67,7 @@ def MLRBA_V1(ticker, covariances, returns, num_iterations=None, risk_free_rate =
             progress_bar.update(1)
 
             new_returns, new_var, new_weighted_sharpe, new_p_return, new_p_variance, new_p_weights = _get_portfolio_stats(test_portfolio, risk_free_rate)
-            _update_portfolios_array(all_portfolios, test_portfolio, new_p_weights, new_p_return, new_p_variance)
+            _update_portfolios_array(all_portfolios, test_portfolio, new_p_weights, new_p_return, new_p_variance, iteration=portfolios_tested+1)
 
             if new_weighted_sharpe > highest_weighted_sharpe:
                 best_iteration = portfolios_tested
@@ -74,7 +75,7 @@ def MLRBA_V1(ticker, covariances, returns, num_iterations=None, risk_free_rate =
                 curr_ret, curr_var = new_returns, new_var
                 highest_weighted_sharpe = new_weighted_sharpe
 
-                _update_portfolios_array(good_portfolios, test_portfolio, new_p_weights, new_p_return, new_p_variance)
+                _update_portfolios_array(good_portfolios, test_portfolio, new_p_weights, new_p_return, new_p_variance, iteration=portfolios_tested+1)
 
                 asset_added = True
                 break  # Accept first asset that improves Sharpe
@@ -109,19 +110,20 @@ def MLRBA_V2(ticker, covariances, returns, correlation_matrix, num_iterations=No
         sharpe = get_sharpe_ratio(p_ret, p_var, risk_free_rate, return_power, std_power)
         return p_asset_ret, p_asset_var, sharpe, p_ret, p_var, best_p_weights
 
-    def _update_portfolios_array(portfolios, assets, weights, p_ret, p_var):
+    def _update_portfolios_array(portfolios, assets, weights, p_ret, p_var, iteration=None):
         portfolios.append({
             "tickers": assets,
             "weights": weights,
             "return": p_ret,
             "variance": p_var,
             "sharpe": (p_ret - risk_free_rate) / np.sqrt(p_var),
+            "iteration": iteration
         })
 
     all_portfolios = []
 
     curr_ret, curr_var, curr_weighted_sharpe, curr_p_return, curr_p_variance, curr_p_weights = _get_portfolio_stats(base_portfolio, risk_free_rate)
-    _update_portfolios_array(all_portfolios, base_portfolio, curr_p_weights, curr_p_return, curr_p_variance)
+    _update_portfolios_array(all_portfolios, base_portfolio, curr_p_weights, curr_p_return, curr_p_variance, iteration=0)
 
     good_portfolios = all_portfolios.copy()
     best_portfolio = base_portfolio.copy()
@@ -152,7 +154,7 @@ def MLRBA_V2(ticker, covariances, returns, correlation_matrix, num_iterations=No
             copy_new_portfolio.append(asset)
 
             new_returns, new_var, new_weighted_sharpe, new_p_return, new_p_variance, new_p_weights = _get_portfolio_stats(copy_new_portfolio, risk_free_rate)
-            _update_portfolios_array(all_portfolios, copy_new_portfolio, new_p_weights, new_p_return, new_p_variance)
+            _update_portfolios_array(all_portfolios, copy_new_portfolio, new_p_weights, new_p_return, new_p_variance, iteration=portfolios_tested+1)
 
             if new_weighted_sharpe > highest_weighted_sharpe:
                 best_iteration = portfolios_tested
@@ -186,7 +188,7 @@ def MLRBA_V2(ticker, covariances, returns, correlation_matrix, num_iterations=No
                 else:
                     learning_rate *= 1.01
 
-                _update_portfolios_array(good_portfolios, copy_new_portfolio, new_p_weights, new_p_return, new_p_variance)
+                _update_portfolios_array(good_portfolios, copy_new_portfolio, new_p_weights, new_p_return, new_p_variance, iteration=portfolios_tested+1)
                 break  # stop at first valid improving asset
 
         if not asset_added:
