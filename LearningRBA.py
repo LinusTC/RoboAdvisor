@@ -8,7 +8,7 @@ def MLRBA_V1(ticker, covariances, returns, num_iterations=None, risk_free_rate =
              return_power = 1, std_power = 1, return_weight=1/3, corr_weight=1/3, vol_weight= 1/3, num_assets = 8, base_portfolio = None):
     
     if num_iterations is None:
-        num_iterations = min(math.comb(len(ticker), num_assets), 100000)
+        num_iterations = min(math.comb(len(ticker), num_assets), 50000)
     
     if base_portfolio is None:
         base_portfolio = np.random.choice(list(ticker), num_assets, replace=False)
