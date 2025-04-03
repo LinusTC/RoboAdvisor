@@ -178,12 +178,13 @@ def MLRBA_V2(ticker, covariances, returns, correlation_matrix, num_iterations=No
                 vol_weight    += learning_rate * (avg_vol - asset_vol) / avg_vol
                 corr_weight   += learning_rate * (avg_corr_in_portfolio - corr_with_portfolio) / avg_corr_in_portfolio
 
-                min_weight = 0.2 + 0.8 * (portfolios_tested / num_iterations)
-                max_weight = 1.8 - 0.8 * (portfolios_tested / num_iterations)
+                if(num_iterations > 2000):
+                    min_weight = 0.2 + 0.8 * (portfolios_tested / num_iterations)
+                    max_weight = 1.8 - 0.8 * (portfolios_tested / num_iterations)
 
-                return_weight = np.clip(return_weight, min_weight, max_weight)
-                corr_weight = np.clip(corr_weight, min_weight, max_weight)
-                vol_weight = np.clip(vol_weight, min_weight, max_weight)
+                    return_weight = np.clip(return_weight, min_weight, max_weight)
+                    corr_weight = np.clip(corr_weight, min_weight, max_weight)
+                    vol_weight = np.clip(vol_weight, min_weight, max_weight)
 
                 total = return_weight + corr_weight + vol_weight
                 return_weight /= total
