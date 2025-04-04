@@ -162,7 +162,7 @@ class PortfolioPredictor:
 
         return mean_percentage_error, accuracy
 
-def select_representative_portfolios(portfolios, portfolio_per_division = 2, divisions=3):
+def select_representative_portfolios(portfolios, portfolio_per_division, divisions):
     n = len(portfolios)
     if divisions > n:
         divisions = n
@@ -184,7 +184,7 @@ def select_representative_portfolios(portfolios, portfolio_per_division = 2, div
             
     return selected
 
-def evaluate_portfolios_over_time(raw_data, investment_starting_date, window_size=5, threshold=0.05, epochs=30, length_of_investment = None):
+def evaluate_portfolios_over_time(raw_data, investment_starting_date, window_size=5, threshold=0.05, epochs=30, length_of_investment = None, candidates_per_divison = 2, candidates_divison = 3):
     investment_start = len(raw_data[:investment_starting_date])
 
     trading_days = len(raw_data[investment_starting_date:investment_starting_date + pd.Timedelta(days=length_of_investment)] if length_of_investment is not None else raw_data[investment_starting_date:])
@@ -211,7 +211,7 @@ def evaluate_portfolios_over_time(raw_data, investment_starting_date, window_siz
             if difference < threshold:
                 candidate_list.append(loop_good_portfolios[j])
 
-        filtered_candidate_list = select_representative_portfolios(candidate_list, 2)
+        filtered_candidate_list = select_representative_portfolios(candidate_list, candidates_per_divison, candidates_divison)
 
         if previous_best_portfolio is not None:
             filtered_candidate_list.append(previous_best_portfolio)
