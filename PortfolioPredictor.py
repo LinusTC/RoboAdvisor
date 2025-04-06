@@ -1,6 +1,9 @@
+import os
 import random
 import numpy as np
 import pandas as pd
+import psutil
+import multiprocessing
 from sklearn.preprocessing import MinMaxScaler
 import tensorflow as tf
 from tensorflow.keras.models import Sequential # type: ignore
@@ -184,6 +187,29 @@ def select_representative_portfolios(portfolios, portfolio_per_division, divisio
             
     return selected
 
+def run_prediction_in_process(args):
+    raw_data_train, raw_data_test, portfolio, window_size, epochs = args
+
+    import tensorflow as tf  # Import inside subprocess
+    tf.keras.backend.clear_session()
+    predictor = PortfolioPredictor(raw_data_train, raw_data_test, portfolio, n_steps=window_size, epochs=epochs)
+    predictor.preprocess_data()
+    predictor.build_model()
+    predictor.train_model()
+    predictions, pred_dates = predictor.predict()
+
+    tf.keras.backend.clear_session()
+    import gc
+    gc.collect()
+    
+    if len(predictions) >= window_size:
+        end_pred = predictions[window_size-1]
+    else:
+        end_pred = predictions[-1]
+    percentage_diff = (end_pred - predictions[0]) / predictions[0]
+    
+    return predictions, pred_dates, percentage_diff
+
 def evaluate_portfolios_over_time(raw_data, investment_starting_date, window_size=5, threshold=0.05, epochs=30, length_of_investment = None, candidates_per_divison = 2, candidates_divison = 3):
     investment_start = len(raw_data[:investment_starting_date])
 
@@ -222,11 +248,11 @@ def evaluate_portfolios_over_time(raw_data, investment_starting_date, window_siz
         
         portfolio_results = {}
         for id, portfolio in enumerate(filtered_candidate_list):
-            portfolio_predictor = PortfolioPredictor(loop_raw_data_train, loop_raw_data_test, portfolio, n_steps=window_size, epochs=epochs)
-            portfolio_predictor.preprocess_data()
-            portfolio_predictor.build_model()
-            portfolio_predictor.train_model()
-            predictions, pred_dates = portfolio_predictor.predict() 
+            print(f"RAM Usage: {psutil.Process(os.getpid()).memory_info().rss / 1024**2:.2f} MB")            
+            args = (loop_raw_data_train, loop_raw_data_test, portfolio, window_size, epochs)
+            with multiprocessing.get_context("spawn").Pool(1) as pool:
+                result = pool.map(run_prediction_in_process, [args])
+            predictions, pred_dates, percentage_diff = result[0]
 
             if len(predictions) >= window_size:
                 end_pred = predictions[window_size-1]
