@@ -14,7 +14,7 @@ from LearningRBA import MLRBA_V2
 from PortfolioFunction import get_matrices
 
 class PortfolioPredictor:
-    def __init__(self, raw_data_train, raw_data_test, best_portfolio, n_steps=1, epochs=50, batch_size=32, activation_function = 'relu'):
+    def __init__(self, raw_data_train, raw_data_test, best_portfolio, n_steps=5, epochs=50, batch_size=32, activation_function = 'relu'):
         self.raw_data_train = raw_data_train
         self.raw_data_test = raw_data_test
         self.best_portfolio = best_portfolio
