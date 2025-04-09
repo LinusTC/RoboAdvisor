@@ -15,7 +15,7 @@ from PortfolioFunction import get_matrices
 
 class PortfolioPredictorDirectMultiStep:
     def __init__(self, raw_data_train, raw_data_test, best_portfolio, 
-                 lookback=20, n_steps=5, epochs=50, batch_size=32, activation_function='relu'):
+                 lookback=5, n_steps=5, epochs=50, batch_size=32, activation_function='relu'):
         self.raw_data_train = raw_data_train
         self.raw_data_test = raw_data_test
         self.best_portfolio = best_portfolio
