@@ -15,7 +15,7 @@ from PortfolioFunction import get_matrices
 
 class PortfolioPredictorDirectMultiStep:
     def __init__(self, raw_data_train, raw_data_test, best_portfolio, 
-                 lookback=5, n_steps=5, epochs=50, batch_size=32, activation_function='relu'):
+                 lookback=5, n_steps=5, epochs=50, batch_size=32, activation_function='tanh'):
         self.raw_data_train = raw_data_train
         self.raw_data_test = raw_data_test
         self.best_portfolio = best_portfolio
@@ -60,7 +60,25 @@ class PortfolioPredictorDirectMultiStep:
             Dropout(0.2),
             Dense(self.n_steps)
         ])
-        self.model.compile(optimizer='adam', loss='mse')
+        def tf_weighted_mse(y_true, y_pred, power=3):
+            n = tf.shape(y_true)[0]  # batch size
+            normalized_index = tf.cond(
+                tf.equal(n, 1),
+                lambda: tf.ones([n], dtype=tf.float32),
+                lambda: tf.cast(tf.range(n), tf.float32) / tf.cast(n - 1, tf.float32)
+            )
+            weights = tf.pow(normalized_index, power) + 1e-6
+            weights /= tf.reduce_sum(weights)  # normalize
+
+            # Expand weights to shape (batch_size, 1) for broadcasting
+            weights = tf.expand_dims(weights, axis=1)
+
+            squared_errors = tf.square(y_true - y_pred)  # shape: (batch_size, n_steps)
+            weighted_squared_errors = weights * squared_errors
+
+            return tf.reduce_mean(weighted_squared_errors)
+
+        self.model.compile(optimizer='adam', loss=tf_weighted_mse)
 
     def train_model(self):
         X_train, y_train = self.create_datasets(self.weighted_returns_train.reshape(-1, 1))
