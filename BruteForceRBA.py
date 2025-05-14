@@ -26,7 +26,6 @@ class PortfolioOptimizer:
         self.raw_asset_data, self.asset_errors_, self.max_combination_ = fetch_raw_data_yf(self.asset_basket_)
         self.sim_comb = get_matrices_bf(self.raw_asset_data, self.portfolio_size_, self.max_iters_)
         self.optimize_for_sharpe()
-        self.optimize_for_return()
         self.optimize_for_volatility()
         
     def portfolio_stats(self,weights):   
