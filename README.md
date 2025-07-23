@@ -24,4 +24,3 @@
     ```bash
     pip install yfinance --upgrade
     ```
-
